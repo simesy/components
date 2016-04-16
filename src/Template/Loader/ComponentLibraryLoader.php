@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\component_libraries\Template\Loader\ComponentLibraryLoader.
+ * Contains \Drupal\components\Template\Loader\ComponentLibraryLoader.
  */
 
-namespace Drupal\component_libraries\Template\Loader;
+namespace Drupal\components\Template\Loader;
 
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Extension\ThemeHandlerInterface;
@@ -34,26 +34,44 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
 
     // Add namespaced paths for modules and themes.
     $namespaces = array();
+    $existing_namespaces = array();
     foreach ($module_handler->getModuleList() as $name => $extension) {
-      // Modules MUST declare the components -> namespace in their .info.yml
-      // file or the component library will be ignored.
-      if (isset($extension['info']['components']['namespace'])) {
-        $namespace = $extension['info']['components']['namespace'];
-        $path = $extension->getPath() . '/' . (isset($extension['info']['components']['directory']) ? $extension['info']['components']['directory'] : 'components');
-        if (is_dir($path)) {
-          $namespaces[$namespace] = $path;
+      // The Drupal\Core\Template\Loader\FilesystemLoader makes a Twig namespace
+      // for all modules and themes, so we re-create that list here.
+      $existing_namespaces[] = $name;
+
+      // For each library listed in the .info file's component_libraries
+      // section, determine the namespace and the path.
+      if (isset($extension->info['component_libraries'])) {
+        foreach ($extension->info['component_libraries'] as $library) {
+          // Modules MUST declare the namespace explicitly or the component
+          // library will be ignored.
+          if (isset($library['namespace'])) {
+            $path = $extension->getPath() . '/' . (isset($library['directory']) ? $library['directory'] : 'components');
+            if (is_dir($path)) {
+              $namespaces[$library['namespace']] = $path;
+            }
+          }
         }
       }
     }
     foreach ($theme_handler->listInfo() as $name => $extension) {
-      $namespace = isset($extension['info']['components']['namespace']) ? $extension['info']['components']['namespace'] : $name . 'Components';
-      $path = $extension->getPath() . '/' . (isset($extension['info']['components']['directory']) ? $extension['info']['components']['directory'] : 'components');
-      if (is_dir($path)) {
-        $namespaces[$namespace] = $path;
+      // The Drupal\Core\Template\Loader\FilesystemLoader makes a Twig namespace
+      // for all modules and themes, so we re-create that list here.
+      $existing_namespaces[] = $name;
+
+      // For each library listed in the .info file's component_libraries
+      // section, determine the namespace and the path.
+      if (isset($extension->info['component_libraries'])) {
+        foreach ($extension->info['component_libraries'] as $library) {
+          $namespace = isset($library['namespace']) ? $library['namespace'] : $name . 'Components';
+          $path = $extension->getPath() . '/' . (isset($library['directory']) ? $library['directory'] : 'components');
+          if (is_dir($path)) {
+            $namespaces[$namespace] = $path;
+          }
+        }
       }
     }
-
-    $existing_namespaces = $this->getNamespaces();
 
     foreach ($namespaces as $name => $path) {
       // Don't override an existing namespace.
