@@ -79,6 +79,10 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
       }
     }
 
+    // Since the components module does not have any Twig templates, we can
+    // safely let a component library override its namespace.
+    $existing_namespaces = array_diff($existing_namespaces, array('components'));
+
     // Decide if we should register each component library found.
     foreach ($this->libraries as &$library) {
       if (!$library['error']) {
