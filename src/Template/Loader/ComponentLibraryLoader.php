@@ -60,7 +60,7 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
         // section, determine the namespace and the path.
         if (isset($extension->info['component-libraries'])) {
           foreach ($extension->info['component-libraries'] as $namespace => $library) {
-            $paths = isset($library['paths']) ? $library['paths'] : 'components';
+            $paths = isset($library['paths']) ? $library['paths'] : array();
 
             // Allow paths to be an array or a string.
             if (!is_array($paths)) {
@@ -90,11 +90,16 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
 
     // Decide if we should register each component library found.
     foreach ($this->libraries as &$library) {
-      foreach ($library['paths'] as $path) {
-        // The component library's paths must exist.
-        if (!$library['error']) {
-          if (!is_dir($path)) {
-            $library['error'] = 'path does not exist: "' . $path . '"';
+      // The component library's paths must exist.
+      if (empty($library['paths'])) {
+        $library['error'] = 'Paths are not defined.';
+      }
+      else {
+        foreach ($library['paths'] as $path) {
+          if (!$library['error']) {
+            if (!is_dir($path)) {
+              $library['error'] = 'path does not exist: "' . $path . '"';
+            }
           }
         }
       }
