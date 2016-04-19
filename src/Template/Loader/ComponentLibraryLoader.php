@@ -41,42 +41,45 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
     // for each module and theme, so we re-create that list here.
     $existing_namespaces = array();
 
-    // Look at each module.
-    foreach ($module_handler->getModuleList() as $name => $extension) {
-      $existing_namespaces[] = $name;
+    // Look at each module and theme.
+    $extension_types = array(
+      'module' => array(
+        'handler' => $module_handler,
+        'method' => 'getModuleList',
+      ),
+      'theme' => array(
+        'handler' => $theme_handler,
+        'method' => 'listInfo',
+      ),
+    );
+    foreach($extension_types as $type => $extension_type) {
+      foreach ($extension_type['handler']->{$extension_type['method']}() as $name => $extension) {
+        $existing_namespaces[] = $name;
 
-      // For each library listed in the .info file's component_libraries
-      // section, determine the namespace and the path.
-      if (isset($extension->info['component_libraries'])) {
-        foreach ($extension->info['component_libraries'] as $library) {
-          $this->libraries[] = array(
-            'type' => 'module',
-            'name' => $name,
-            'namespace' => isset($library['namespace']) ? $library['namespace'] : '[undefined]',
-            'directory' => $extension->getPath() . '/' . (isset($library['directory']) ? $library['directory'] : 'components'),
-            // Modules MUST declare the namespace explicitly or the component
-            // library will be ignored.
-            'error' => !isset($library['namespace']) ? 'Namespace not specified.' : false
-          );
-        }
-      }
-    }
+        // For each library listed in the .info file's component-libraries
+        // section, determine the namespace and the path.
+        if (isset($extension->info['component-libraries'])) {
+          foreach ($extension->info['component-libraries'] as $namespace => $library) {
+            $paths = isset($library['paths']) ? $library['paths'] : 'components';
 
-    // Look at each theme.
-    foreach ($theme_handler->listInfo() as $name => $extension) {
-      $existing_namespaces[] = $name;
+            // Allow paths to be an array or a string.
+            if (!is_array($paths)) {
+              $paths = array($paths);
+            }
 
-      // For each library listed in the .info file's component_libraries
-      // section, determine the namespace and the path.
-      if (isset($extension->info['component_libraries'])) {
-        foreach ($extension->info['component_libraries'] as $library) {
-          $this->libraries[] = array(
-            'type' => 'theme',
-            'name' => $name,
-            'namespace' => isset($library['namespace']) ? $library['namespace'] : $name . 'Components',
-            'directory' => $extension->getPath() . '/' . (isset($library['directory']) ? $library['directory'] : 'components'),
-            'error' => false
-          );
+            // Add the extension's path to the library paths.
+            foreach ($paths as $key => $path) {
+              $paths[$key] = $extension->getPath() . '/' . $path;
+            }
+
+            $this->libraries[] = array(
+              'type' => $type,
+              'name' => $name,
+              'namespace' => $namespace,
+              'paths' => $paths,
+              'error' => FALSE
+            );
+          }
         }
       }
     }
@@ -87,21 +90,23 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
 
     // Decide if we should register each component library found.
     foreach ($this->libraries as &$library) {
-      if (!$library['error']) {
-        // The component library's directory must exist.
-        if (!is_dir($library['directory'])) {
-          $library['error'] = 'Directory does not exist.';
+      foreach ($library['paths'] as $path) {
+        // The component library's paths must exist.
+        if (!$library['error']) {
+          if (!is_dir($path)) {
+            $library['error'] = 'path does not exist: "' . $path . '"';
+          }
         }
+      }
 
-        // Don't override an existing namespace.
-        elseif (in_array($library['namespace'], $existing_namespaces)) {
-          $library['error'] = 'Namespace already exists.';
-        }
+      // Don't override an existing namespace.
+      if (!$library['error'] && in_array($library['namespace'], $existing_namespaces)) {
+        $library['error'] = 'Namespace already exists.';
       }
 
       // Register the Twig namespace if no errors.
       if (!$library['error']) {
-        $this->addPath($library['directory'], $library['namespace']);
+        $this->setPaths($library['paths'], $library['namespace']);
         $existing_namespaces[] = $library['namespace'];
       }
     }
