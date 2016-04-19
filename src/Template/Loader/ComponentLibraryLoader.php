@@ -96,10 +96,8 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
       }
       else {
         foreach ($library['paths'] as $path) {
-          if (!$library['error']) {
-            if (!is_dir($path)) {
-              $library['error'] = 'path does not exist: "' . $path . '"';
-            }
+          if (!$library['error'] && !is_dir($path)) {
+            $library['error'] = 'path does not exist: "' . $path . '"';
           }
         }
       }
