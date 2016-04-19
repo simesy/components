@@ -88,6 +88,8 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
     // safely let a component library override its namespace.
     $existing_namespaces = array_diff($existing_namespaces, array('components'));
 
+    $overridden_namespaces = array();
+
     // Decide if we should register each component library found.
     foreach ($this->libraries as &$library) {
       // The component library's paths must exist.
@@ -103,8 +105,14 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
       }
 
       // Don't override an existing namespace.
-      if (!$library['error'] && in_array($library['namespace'], $existing_namespaces)) {
-        $library['error'] = 'Namespace already exists.';
+      if (!$library['error']) {
+        // Allow a theme or module to override its own namespace.
+        if ($library['namespace'] === $library['name'] && !in_array($library['name'], $overridden_namespaces)) {
+          $overridden_namespaces[] = $library['name'];
+        }
+        elseif (in_array($library['namespace'], $existing_namespaces)) {
+          $library['error'] = 'Namespace already exists.';
+        }
       }
 
       // Register the Twig namespace if no errors.
