@@ -33,7 +33,9 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
    *   The theme handler service.
    */
   public function __construct($paths = array(), ModuleHandlerInterface $module_handler, ThemeHandlerInterface $theme_handler) {
-    parent::__construct($paths);
+    // Don't pass $paths to __contruct() or it will create the default Twig
+    // namespace in this Twig loader.
+    parent::__construct();
 
     // The Drupal\Core\Template\Loader\FilesystemLoader makes a Twig namespace
     // for each module and theme, so we re-create that list here.
