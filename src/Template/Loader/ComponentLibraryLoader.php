@@ -52,7 +52,7 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
         'method' => 'listInfo',
       ),
     );
-    foreach($extension_types as $type => $extension_type) {
+    foreach ($extension_types as $type => $extension_type) {
       foreach ($extension_type['handler']->{$extension_type['method']}() as $name => $extension) {
         $existing_namespaces[] = $name;
 
