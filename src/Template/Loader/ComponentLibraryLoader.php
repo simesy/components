@@ -84,41 +84,12 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
       }
     }
 
-    // Since the components module does not have any Twig templates, we can
-    // safely let a component library override its namespace.
-    $existing_namespaces = array_diff($existing_namespaces, array('components'));
-
-    $overridden_namespaces = array();
-
-    // Decide if we should register each component library found.
+    // Register the library paths.
     foreach ($this->libraries as &$library) {
-      // The component library's paths must exist.
-      if (empty($library['paths'])) {
-        $library['error'] = 'Paths are not defined.';
-      }
-      else {
+      if (isset($library['paths'])) {
         foreach ($library['paths'] as $path) {
-          if (!$library['error'] && !is_dir($path)) {
-            $library['error'] = 'Path does not exist: "' . $path . '"';
-          }
+          $this->addPath($path, $library['namespace']);
         }
-      }
-
-      // Don't override an existing namespace.
-      if (!$library['error']) {
-        // Allow a theme or module to override its own namespace.
-        if ($library['namespace'] === $library['name'] && !in_array($library['name'], $overridden_namespaces)) {
-          $overridden_namespaces[] = $library['name'];
-        }
-        elseif (in_array($library['namespace'], $existing_namespaces)) {
-          $library['error'] = 'Namespace already exists.';
-        }
-      }
-
-      // Register the Twig namespace if no errors.
-      if (!$library['error']) {
-        $this->setPaths($library['paths'], $library['namespace']);
-        $existing_namespaces[] = $library['namespace'];
       }
     }
   }
