@@ -56,10 +56,18 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
       foreach ($extension_type['handler']->{$extension_type['method']}() as $name => $extension) {
         $existing_namespaces[] = $name;
 
+        // If type is 'module' we need to get the info.
+        if ($type == 'module') {
+          $info = system_get_info($type, $name);
+        }
+        else {
+          $info = $extension->info;
+        }
+
         // For each library listed in the .info file's component-libraries
         // section, determine the namespace and the path.
-        if (isset($extension->info['component-libraries'])) {
-          foreach ($extension->info['component-libraries'] as $namespace => $library) {
+        if (isset($info['component-libraries'])) {
+          foreach ($info['component-libraries'] as $namespace => $library) {
             $paths = isset($library['paths']) ? $library['paths'] : array();
 
             // Allow paths to be an array or a string.
