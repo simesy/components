@@ -111,7 +111,7 @@ class ComponentLibraryLoader extends \Twig_Loader_Filesystem {
           $overridden_namespaces[] = $library['name'];
         }
         elseif (in_array($library['namespace'], $existing_namespaces)) {
-          $library['error'] = 'Namespace already exists.';
+          // $library['error'] = 'Namespace already exists.';
         }
       }
 
